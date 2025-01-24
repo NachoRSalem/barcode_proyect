@@ -4,9 +4,10 @@ import Quagga from 'quagga';
 import { useNavigate } from 'react-router-dom';
 
 const BarcodeScanner = () => {
-  const [barcodeValue, setBarcodeValue] = useState(null); 
-  const webcamRef = useRef(null); 
-  const navigate = useNavigate(); 
+  const [barcodeValue, setBarcodeValue] = useState(null);
+  const [manualBarcode, setManualBarcode] = useState(''); // estado para el código ingresado manualmente
+  const webcamRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeScanner = () => {
@@ -15,7 +16,7 @@ const BarcodeScanner = () => {
           inputStream: {
             name: 'Live',
             type: 'LiveStream',
-            target: webcamRef.current?.video, 
+            target: webcamRef.current?.video,
             constraints: {
               facingMode: 'environment', //usar cámara trasera
             },
@@ -39,25 +40,38 @@ const BarcodeScanner = () => {
         }
       );
 
-      //resultados del escaneo
+      // resultados del escaneo
       Quagga.onDetected((data) => {
         const scannedCode = data?.codeResult?.code;
         if (scannedCode) {
-          setBarcodeValue(scannedCode); //guarda el código escaneado
-          Quagga.stop(); //detiene el escaneo
-          navigate(`/home?code=${scannedCode}`); //redirige
+          setBarcodeValue(scannedCode); // guarda el código escaneado
+          Quagga.stop(); // detiene el escaneo
+          navigate(`/home?code=${scannedCode}`); // redirige
         }
       });
     };
 
-    initializeScanner(); 
+    initializeScanner();
 
-   
     return () => {
-      Quagga.stop(); 
-      Quagga.offDetected(); 
+      Quagga.stop();
+      Quagga.offDetected();
     };
   }, [navigate]);
+
+ 
+  const handleManualInput = (event) => {
+    const value = event.target.value;
+    setManualBarcode(value); // actualiza el valor del código manual
+  };
+
+ 
+  const handleSubmitManualBarcode = () => {
+    if (manualBarcode) {
+      setBarcodeValue(manualBarcode); // establece el valor del código manual
+      navigate(`/home?code=${manualBarcode}`); // redirige con el código manual
+    }
+  };
 
   return (
     <div
@@ -68,7 +82,7 @@ const BarcodeScanner = () => {
         className="position-relative"
         style={{ width: '90%', maxWidth: '400px', height: 'auto' }}
       >
-        {/* Contenedor de la cámara */}
+        
         <div
           className="position-absolute top-50 start-50 translate-middle"
           style={{
@@ -92,7 +106,6 @@ const BarcodeScanner = () => {
           />
         </div>
 
-       
         <div
           className="position-absolute top-50 start-50 translate-middle"
           style={{
@@ -103,7 +116,24 @@ const BarcodeScanner = () => {
         ></div>
       </div>
 
-     
+      
+      <div className="mt-3 w-100">
+        <input
+          type="text"
+          value={manualBarcode}
+          onChange={handleManualInput}
+          className="form-control"
+          placeholder="Ingresa el código de barras manualmente"
+        />
+        <button
+          onClick={handleSubmitManualBarcode}
+          className="btn btn-primary mt-2 w-100"
+        >
+          Buscar código
+        </button>
+      </div>
+
+      {/* Mostrar el código detectado */}
       {barcodeValue && (
         <div
           className="position-absolute bottom-0 w-100 text-center py-3"
@@ -117,4 +147,5 @@ const BarcodeScanner = () => {
 };
 
 export default BarcodeScanner;
+
 

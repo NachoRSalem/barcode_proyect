@@ -10,7 +10,7 @@ const Header = () => {
             src={logo} 
             alt="Logo" 
             className="rounded-circle" 
-            style={{ width: '80px', height: '80px' }} 
+            style={{ width: '90px', height: '90px' }} 
           />
         </div>
       </header>

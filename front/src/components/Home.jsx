@@ -3,52 +3,64 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
 const Home = () => {
-  const [activeSection, setActiveSection] = useState('disfraces'); 
-  const [infoData, setInfoData] = useState([]); 
-  const [reservedDates, setReservedDates] = useState([]); 
+  const [activeSection, setActiveSection] = useState('disfraces');
+  const [infoData, setInfoData] = useState([]);
+  const [reservedDates, setReservedDates] = useState([]);
+  const [clients, setClients] = useState([]);
   const [newReservation, setNewReservation] = useState({
     fechaRetiro: null,
     fechaDevolucion: null,
-  }); 
-  const [showForm, setShowForm] = useState(false); 
+    cliente: '',
+  });
+  const [showForm, setShowForm] = useState(false);
 
- 
   const handleSectionChange = (section) => {
     setActiveSection(section);
   };
 
-
   useEffect(() => {
+    // Obtener información de disfraces
     const fetchInfoData = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/disfraces');
+        const response = await fetch('http://localhost:3001/api/disfraces'); // Cambiar para obtener todos los disfraces
         const data = await response.json();
-        setInfoData(data); 
+        setInfoData(data); // Suponiendo que la respuesta tenga el formato adecuado
       } catch (error) {
-        console.error('Error al obtener los datos de info:', error);
+        console.error('Error al obtener los datos de disfraces:', error);
       }
     };
 
+    // Obtener fechas reservadas
     const fetchReservedDates = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/reservas');
+        const response = await fetch('http://localhost:3001/api/reservas'); // Cambiar para obtener todas las reservas
         const data = await response.json();
-        setReservedDates(data.map((reserva) => new Date(reserva.fecha))); 
+        setReservedDates(data.map((reserva) => new Date(reserva.fecha_retiro))); // Asegúrate de que las fechas coincidan con los campos de la base
       } catch (error) {
         console.error('Error al obtener las fechas reservadas:', error);
       }
     };
 
+    // Obtener lista de clientes
+    const fetchClients = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/clientes'); // Asegúrate de tener una API para obtener clientes
+        const data = await response.json();
+        setClients(data);
+      } catch (error) {
+        console.error('Error al obtener la lista de clientes:', error);
+      }
+    };
+
     fetchInfoData();
     fetchReservedDates();
+    fetchClients();
   }, []);
-
 
   const handleReservationChange = (field, value) => {
     setNewReservation((prev) => ({ ...prev, [field]: value }));
   };
 
-  //envio del formulario
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -63,9 +75,9 @@ const Home = () => {
       if (response.ok) {
         alert('Reserva creada con éxito');
         const newReserva = await response.json();
-        setReservedDates((prev) => [...prev, new Date(newReserva.fechaRetiro)]); 
-        setNewReservation({ fechaRetiro: null, fechaDevolucion: null }); 
-        setShowForm(false); 
+        setReservedDates((prev) => [...prev, new Date(newReserva.fecha_retiro)]);
+        setNewReservation({ fechaRetiro: null, fechaDevolucion: null, cliente: '' });
+        setShowForm(false);
       } else {
         alert('Error al crear la reserva');
       }
@@ -97,9 +109,8 @@ const Home = () => {
           {infoData.length > 0 ? (
             <ul>
               {infoData.map((item) => (
-                <li key={item.id} className="mb-3">
-                  <strong>Talle:</strong> {item.talle} <br />
-                  <strong>Color:</strong> {item.color} <br />
+                <li key={item.codigo_barra} className="mb-3">
+                  <strong>Nombre:</strong> {item.nombre} <br />
                   <strong>Descripción:</strong> {item.descripcion}
                 </li>
               ))}
@@ -153,6 +164,16 @@ const Home = () => {
                     className="form-control"
                     value={newReservation.fechaDevolucion || ''}
                     onChange={(e) => handleReservationChange('fechaDevolucion', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Cliente</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={newReservation.cliente || ''}
+                    onChange={(e) => handleReservationChange('cliente', e.target.value)}
                     required
                   />
                 </div>
