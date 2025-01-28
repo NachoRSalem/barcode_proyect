@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
+import { useSearchParams } from 'react-router-dom';
 
 const Home = () => {
+  const [searchParams] = useSearchParams(); 
   const [activeSection, setActiveSection] = useState('disfraces');
   const [codigoBarra, setCodigoBarra] = useState('');
   const [infoData, setInfoData] = useState(null);
@@ -13,13 +15,17 @@ const Home = () => {
     cliente: '',
   });
   const [showForm, setShowForm] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState(null); // To store selected reservation details
+  const [selectedReservation, setSelectedReservation] = useState(null); 
 
-  const handleSectionChange = (section) => {
-    setActiveSection(section);
-  };
+  useEffect(() => {
+    
+    const codeFromURL = searchParams.get('code');
+    if (codeFromURL) {
+      setCodigoBarra(codeFromURL);
+    }
+  }, [searchParams]);
 
-  // Fetch data based on the codigoBarra
+  
   const fetchDisfrazData = async () => {
     if (codigoBarra) {
       try {
@@ -29,12 +35,14 @@ const Home = () => {
 
         const responseReservas = await fetch(`http://localhost:3001/api/reservas/${disfrazData.id}`);
         const reservasData = await responseReservas.json();
-        setReservedDates(reservasData.map((reserva) => ({
-          id: reserva.id,
-          fecha_retiro: new Date(reserva.fecha_retiro),
-          fecha_devolucion: new Date(reserva.fecha_devolucion),
-          cliente: reserva.cliente, // Add client name to the reservation data
-        })));
+        setReservedDates(
+          reservasData.map((reserva) => ({
+            id: reserva.id,
+            fecha_retiro: new Date(reserva.fecha_retiro),
+            fecha_devolucion: new Date(reserva.fecha_devolucion),
+            cliente: reserva.cliente, 
+          }))
+        );
       } catch (error) {
         console.error('Error al obtener datos:', error);
       }
@@ -45,33 +53,49 @@ const Home = () => {
     fetchDisfrazData();
   }, [codigoBarra]);
 
+  const handleSectionChange = (section) => {
+    setActiveSection(section);
+  };
+
   const handleReservationChange = (field, value) => {
     setNewReservation((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    const disfrazId = infoData.id; // Assuming `infoData` contains the correct data
-
+    const disfrazId = infoData.id; 
+    console.log('Datos enviados al servidor:', {
+      fechaRetiro: new Date(newReservation.fechaRetiro).toISOString(),
+      fechaDevolucion: new Date(newReservation.fechaDevolucion).toISOString(),
+      cliente: newReservation.cliente,
+      disfraz_id: disfrazId,
+    });
     try {
       const response = await fetch('http://localhost:3001/api/reservas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newReservation,
-          disfraz_id: disfrazId, // Add the disfraz_id for the reservation
+          disfraz_id: disfrazId,
+          fecha_retiro:new Date (newReservation.fechaRetiro),
+          fecha_devolucion:new Date (newReservation.fechaDevolucion),
+          cliente: newReservation.cliente,
+           
         }),
       });
 
       if (response.ok) {
         alert('Reserva creada con éxito');
         const newReserva = await response.json();
-        setReservedDates((prev) => [...prev, {
-          id: newReserva.id,
-          fecha_retiro: new Date(newReserva.fecha_retiro),
-          fecha_devolucion: new Date(newReserva.fecha_devolucion),
-          cliente: newReserva.cliente, // Store the client's name in the reservation
-        }]);
+        setReservedDates((prev) => [
+          ...prev,
+          {
+            id: newReserva.id,
+            fecha_retiro: new Date(newReserva.fecha_retiro),
+            fecha_devolucion: new Date(newReserva.fecha_devolucion),
+            cliente: newReserva.cliente, 
+          },
+        ]);
         setNewReservation({ fechaRetiro: null, fechaDevolucion: null, cliente: '' });
         setShowForm(false);
       } else {
@@ -86,7 +110,7 @@ const Home = () => {
     const selected = reservedDates.find(
       (reserva) => reserva.fecha_retiro.toDateString() === date.toDateString()
     );
-    setSelectedReservation(selected || null); // Show the details of the reservation if it exists
+    setSelectedReservation(selected || null); 
   };
 
   return (
@@ -109,16 +133,7 @@ const Home = () => {
       {activeSection === 'disfraces' && (
         <div className="p-4 bg-light rounded shadow">
           <h2>Sección de Información</h2>
-          <div className="mb-3">
-            <label className="form-label">Código de Barra</label>
-            <input
-              type="text"
-              className="form-control"
-              value={codigoBarra}
-              onChange={(e) => setCodigoBarra(e.target.value)}
-              placeholder="Ingresa el código de barra del disfraz"
-            />
-          </div>
+         
           {infoData ? (
             <div>
               <h3>{infoData.nombre}</h3>
@@ -131,7 +146,7 @@ const Home = () => {
         </div>
       )}
 
-      {activeSection === 'reservas' && (
+{activeSection === 'reservas' && (
         <div className="p-4 bg-light rounded shadow">
           <h2>Sección de Reservas</h2>
           <div className="mb-4">
@@ -143,7 +158,7 @@ const Home = () => {
               tileDisabled={({ date }) =>
                 reservedDates.some((d) => d.fecha_retiro.toDateString() === date.toDateString())
               }
-              onClickDay={handleDateClick} // Trigger when a date is clicked
+              onClickDay={handleDateClick}
             />
           </div>
           {selectedReservation && (
@@ -151,7 +166,7 @@ const Home = () => {
               <h5>Detalles de la Reserva</h5>
               <p><strong>Fecha de Retiro:</strong> {selectedReservation.fecha_retiro.toLocaleString()}</p>
               <p><strong>Fecha de Devolución:</strong> {selectedReservation.fecha_devolucion.toLocaleString()}</p>
-              <p><strong>Cliente:</strong> {selectedReservation.cliente}</p> {/* Display client name */}
+              <p><strong>Cliente:</strong> {selectedReservation.cliente}</p> 
             </div>
           )}
 
@@ -161,7 +176,7 @@ const Home = () => {
               <li key={reserva.id} className="list-group-item">
                 <p><strong>Fecha de Retiro:</strong> {reserva.fecha_retiro.toLocaleString()}</p>
                 <p><strong>Fecha de Devolución:</strong> {reserva.fecha_devolucion.toLocaleString()}</p>
-                <p><strong>Cliente:</strong> {reserva.cliente}</p> {/* Display client name */}
+                <p><strong>Cliente:</strong> {reserva.cliente}</p> 
               </li>
             ))}
           </ul>
@@ -215,18 +230,3 @@ const Home = () => {
 };
 
 export default Home;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

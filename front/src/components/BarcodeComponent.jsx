@@ -47,7 +47,6 @@ const BarcodeScanner = () => {
           setBarcodeValue(scannedCode);
           setIsRedirecting(true);
           Quagga.stop();
-          // Redirigir a la página de Home con el código de barras como parámetro
           navigate(`/home?code=${scannedCode}`);
         }
       });
@@ -74,8 +73,24 @@ const BarcodeScanner = () => {
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center min-vh-100" style={{ backgroundColor: '#FFFFFF' }}>
-      <div className="position-relative" style={{ width: '90%', maxWidth: '400px', height: 'auto' }}>
+    <div className="d-flex flex-column justify-content-start align-items-center min-vh-100" style={{ backgroundColor: '#FFFFFF', paddingTop: '30px' }}>
+
+     
+      <div className="w-100" style={{ maxWidth: '400px', marginBottom: '20px', padding: '0 15px' }}>
+        <input
+          type="text"
+          value={manualBarcode}
+          onChange={handleManualInput}
+          className="form-control"
+          placeholder="Ingresa el código de barras manualmente"
+        />
+        <button onClick={handleSubmitManualBarcode} className="btn btn-primary mt-2 w-100">
+          Buscar código
+        </button>
+      </div>
+
+     
+      <div className="position-relative mb-2" style={{ width: '90%', maxWidth: '400px', height: 'auto', marginTop: '150px' }}>
         <div
           className="position-absolute top-50 start-50 translate-middle"
           style={{
@@ -106,19 +121,6 @@ const BarcodeScanner = () => {
             opacity: 0.7,
           }}
         ></div>
-      </div>
-
-      <div className="mt-3 w-100">
-        <input
-          type="text"
-          value={manualBarcode}
-          onChange={handleManualInput}
-          className="form-control"
-          placeholder="Ingresa el código de barras manualmente"
-        />
-        <button onClick={handleSubmitManualBarcode} className="btn btn-primary mt-2 w-100">
-          Buscar código
-        </button>
       </div>
 
       {barcodeValue && (
