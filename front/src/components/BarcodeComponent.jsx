@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 
 const BarcodeScanner = () => {
   const [barcodeValue, setBarcodeValue] = useState(null);
-  const [manualBarcode, setManualBarcode] = useState(''); // estado para el código ingresado manualmente
+  const [manualBarcode, setManualBarcode] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const webcamRef = useRef(null);
   const navigate = useNavigate();
 
@@ -18,7 +19,7 @@ const BarcodeScanner = () => {
             type: 'LiveStream',
             target: webcamRef.current?.video,
             constraints: {
-              facingMode: 'environment', //usar cámara trasera
+              facingMode: 'environment',
             },
           },
           decoder: {
@@ -28,25 +29,26 @@ const BarcodeScanner = () => {
               'ean_8_reader',
               'upc_reader',
               'upc_e_reader',
-            ], //tipos de códigos de barras
+            ],
           },
         },
         (err) => {
           if (err) {
             console.error('Error inicializando Quagga:', err);
           } else {
-            Quagga.start(); //inicia el escaneo
+            Quagga.start();
           }
         }
       );
 
-      // resultados del escaneo
       Quagga.onDetected((data) => {
         const scannedCode = data?.codeResult?.code;
-        if (scannedCode) {
-          setBarcodeValue(scannedCode); // guarda el código escaneado
-          Quagga.stop(); // detiene el escaneo
-          navigate(`/home?code=${scannedCode}`); // redirige
+        if (scannedCode && !isRedirecting) {
+          setBarcodeValue(scannedCode);
+          setIsRedirecting(true);
+          Quagga.stop();
+          // Redirigir a la página de Home con el código de barras como parámetro
+          navigate(`/home?code=${scannedCode}`);
         }
       });
     };
@@ -57,32 +59,23 @@ const BarcodeScanner = () => {
       Quagga.stop();
       Quagga.offDetected();
     };
-  }, [navigate]);
+  }, [navigate, isRedirecting]);
 
- 
   const handleManualInput = (event) => {
-    const value = event.target.value;
-    setManualBarcode(value); // actualiza el valor del código manual
+    setManualBarcode(event.target.value);
   };
 
- 
   const handleSubmitManualBarcode = () => {
-    if (manualBarcode) {
-      setBarcodeValue(manualBarcode); // establece el valor del código manual
-      navigate(`/home?code=${manualBarcode}`); // redirige con el código manual
+    if (manualBarcode && !isRedirecting) {
+      setBarcodeValue(manualBarcode);
+      setIsRedirecting(true);
+      navigate(`/home?code=${manualBarcode}`);
     }
   };
 
   return (
-    <div
-      className="d-flex justify-content-center align-items-center min-vh-100"
-      style={{ backgroundColor: '#FFFFFF' }}
-    >
-      <div
-        className="position-relative"
-        style={{ width: '90%', maxWidth: '400px', height: 'auto' }}
-      >
-        
+    <div className="d-flex justify-content-center align-items-center min-vh-100" style={{ backgroundColor: '#FFFFFF' }}>
+      <div className="position-relative" style={{ width: '90%', maxWidth: '400px', height: 'auto' }}>
         <div
           className="position-absolute top-50 start-50 translate-middle"
           style={{
@@ -100,12 +93,11 @@ const BarcodeScanner = () => {
             height="100%"
             screenshotFormat="image/jpeg"
             videoConstraints={{
-              facingMode: 'environment', //camara trasera, defecto
+              facingMode: 'environment',
             }}
             style={{ borderRadius: '10px' }}
           />
         </div>
-
         <div
           className="position-absolute top-50 start-50 translate-middle"
           style={{
@@ -116,7 +108,6 @@ const BarcodeScanner = () => {
         ></div>
       </div>
 
-      
       <div className="mt-3 w-100">
         <input
           type="text"
@@ -125,20 +116,13 @@ const BarcodeScanner = () => {
           className="form-control"
           placeholder="Ingresa el código de barras manualmente"
         />
-        <button
-          onClick={handleSubmitManualBarcode}
-          className="btn btn-primary mt-2 w-100"
-        >
+        <button onClick={handleSubmitManualBarcode} className="btn btn-primary mt-2 w-100">
           Buscar código
         </button>
       </div>
 
-      {/* Mostrar el código detectado */}
       {barcodeValue && (
-        <div
-          className="position-absolute bottom-0 w-100 text-center py-3"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
-        >
+        <div className="position-absolute bottom-0 w-100 text-center py-3" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}>
           <h2 className="text-white">Código detectado: {barcodeValue}</h2>
         </div>
       )}
@@ -147,5 +131,3 @@ const BarcodeScanner = () => {
 };
 
 export default BarcodeScanner;
-
-
